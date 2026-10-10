@@ -1,12 +1,14 @@
 # Visualify
 
-**A desktop music visualizer for Windows that reacts to whatever your PC is playing: the Spotify app, a browser, a game, anything.**
+**A music visualizer for Windows and the web that reacts to whatever is playing: the Spotify app, a browser tab, a game, anything.**
 
-Visualify listens to your system audio in real time and drives 50 hand-made WebGL shader designs with it. It shows what Spotify is playing, with play/pause/skip controls, and can shuffle between designs in time with the music. There's no login, no API key and no Spotify developer account.
+**[Open it in your browser](https://assafhaft.github.io/visualify/)**, or get the Windows app from [Releases](https://github.com/AssafHaft/visualify/releases).
+
+Visualify listens to your audio in real time and drives 50 hand-made WebGL shader designs with it. It shows what Spotify is playing, with play/pause/skip controls, and can shuffle between designs in time with the music. There's no login, no API key and no Spotify developer account.
 
 > **Built on [Kaleidosync](https://github.com/zachwinter/kaleidosync) by [Zach Winter](https://github.com/zachwinter).**
 > The visuals, the shader designs, the realtime audio analysis and most of the UI are his work, from the Kaleidosync
-> repository and his `@wearesage/*` packages. Visualify wraps that work in a desktop app and adds system-audio capture,
+> repository and his `@wearesage/*` packages. Visualify wraps that work in a desktop app and a web version, and adds system-audio capture,
 > Spotify now-playing, design shuffle, and saved customizations. Please star and support [the original project](https://github.com/zachwinter/kaleidosync) and [kaleidosync.com](https://www.kaleidosync.com).
 
 ![The visualizer](docs/visualizer.png)
@@ -22,11 +24,25 @@ Visualify listens to your system audio in real time and drives 50 hand-made WebG
 
 ![Customizing a design](docs/customize.png)
 
+## Web version
+
+Open **[assafhaft.github.io/visualify](https://assafhaft.github.io/visualify/)**, tap **Get started**, and choose what it listens to:
+
+| Where | What it can hear |
+| --- | --- |
+| Chrome or Edge on a computer | **System Audio**: the whole computer on Windows (pick **Entire screen** and turn on **Share system audio**), or any tab (turn on **Share tab audio**, e.g. for the [Spotify web player](https://open.spotify.com)). Or **Microphone**. |
+| Firefox, Safari, phones and tablets | **Microphone**: play the music out loud and it reacts to what it hears. |
+
+Browsers don't let a web page hear other apps directly. System Audio goes through the screen-sharing prompt (only the audio is used), and phones don't offer screen sharing to web pages at all, so on a phone the microphone is the way in. The screen stays awake while it runs.
+
+Compared with the desktop app, the web version has no Spotify track info or controls (browsers can't read them), and Back leaves the app rather than going to the previous page.
+
 ## Requirements
 
-- Windows 10 (version 1809 or later) or Windows 11
-- [Node.js](https://nodejs.org) 22 or later, to build it
-- Spotify desktop app (optional), or any other audio
+- **Web version:** a current browser. Nothing to install.
+- **Windows app:** Windows 10 (version 1809 or later) or Windows 11
+- [Node.js](https://nodejs.org) 22 or later, to build either one
+- Spotify (optional), or any other audio
 
 ## Getting started
 
@@ -81,35 +97,37 @@ On the **Customize** page:
 | Part | File |
 | --- | --- |
 | Electron shell. Serves the built app over a private `app://` scheme and grants system-audio capture | [`desktop.js`](desktop.js) |
-| Routes Kaleidosync's realtime analyser to system audio instead of a microphone | [`src/desktop.ts`](src/desktop.ts) |
+| What the visualizer hears: Windows system audio (desktop), or the screen-share prompt or microphone (web) | [`src/platform.ts`](src/platform.ts) |
 | Reads the current track and sends play/pause/skip through Windows' media session API | [`media.ps1`](media.ps1) |
 | Track display and controls | [`src/components/NowPlaying.vue`](src/components/NowPlaying.vue) |
 | When shuffle moves on (a random wait, then a lift in loudness) | [`src/shuffle.ts`](src/shuffle.ts) |
 | Rendering, the shuffle dissolve, loading saved variants | [`src/components/Renderer.vue`](src/components/Renderer.vue) |
 | Saved settings and variants | [`src/settings.ts`](src/settings.ts) |
+| Builds the web version and publishes it to GitHub Pages on every push | [`.github/workflows/pages.yml`](.github/workflows/pages.yml) |
 
-Everything runs locally. The only network requests are for web fonts.
+Audio is analysed on your device and never uploaded. The only network requests are for the app itself and its web fonts.
 
 ## Development
 
 | Command | What it does |
 | --- | --- |
-| `npm run desktop` | Build and run the app |
+| `npm run dev` | Run the web version at http://localhost:5173 |
+| `npm run desktop` | Build and run the Windows app |
 | `npm run package` | Build the Windows app into `release/` |
 | `npm run check` | Build, then smoke-test the running app. Play something first: it checks shuffle timing, that system audio drives the visuals, that now playing shows the track, and that the visuals don't freeze when a design's settings change |
 
 ## Known limitations
 
-- Windows only, because system-audio capture and the media controls are Windows features.
+- The desktop app is Windows only, because its system-audio capture and media controls are Windows features.
 - It hears all system audio, so notification sounds make it pulse too.
 - Track info and controls can lag by up to about a second. There's no album art.
-- A single design can hold about 60 saved variants.
+- A single design can hold about 60 saved variants in the desktop app, and about 15 in a browser.
 - Shader code edits aren't saved.
 - Kaleidosync's own Spotify web login isn't available. It relies on Spotify's audio-analysis API, which Spotify closed to new apps in November 2024. Visualify listens to the actual audio instead.
 
 ## Credits
 
-- **[Kaleidosync](https://github.com/zachwinter/kaleidosync)** by **[Zach Winter](https://github.com/zachwinter)**: the visualizer this project is built on, including its shader designs, realtime audio analysis, and UI (via the `@wearesage/*` packages). This repository keeps Kaleidosync's original commit history.
+- **[Kaleidosync](https://github.com/zachwinter/kaleidosync)** by **[Zach Winter](https://github.com/zachwinter)**: the visualizer this project is built on, including its shader designs, realtime audio analysis, and UI (via the `@wearesage/*` packages).
 - [Electron](https://www.electronjs.org), [Vue](https://vuejs.org), [Three.js](https://threejs.org) and [TresJS](https://tresjs.org).
 
 ## License

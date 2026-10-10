@@ -1,5 +1,5 @@
 // Visualify, the Electron shell for Kaleidosync: serves the Vite build (dist/) and feeds its realtime analyser Windows
-// system audio, so it visualizes whatever is playing, e.g. the Spotify desktop app. Renderer half: src/desktop.ts.
+// system audio, so it visualizes whatever is playing, e.g. the Spotify desktop app. Renderer half: src/platform.ts.
 import { app, BrowserWindow, desktopCapturer, net, protocol, session, shell } from "electron";
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";

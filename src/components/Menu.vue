@@ -1,22 +1,17 @@
 <template>
   <nav>
-    <!-- Desktop has a single source, system audio (src/desktop.ts), so there's nothing to pick. -->
-    <AudioSourceButton v-if="!isDesktop" @click="$emit('open-sources')" />
-
-    <IconButton
-      v-if="sources.source === AudioSource.AUDIUS"
-      to="/audius"
-      :label="settings.showMenuLabels ? 'Library' : undefined"
-      icon="vinyl" />
+    <!-- Desktop has a single source, system audio. In a browser, name what kaleidosync's "Microphone" source is really
+         hearing (src/platform.ts); these attrs override the package button's own label and icon. -->
+    <AudioSourceButton
+      v-if="!isDesktop"
+      v-bind="sources.source === AudioSource.MICROPHONE && listenTo === 'system' ? { label: 'System Audio', icon: 'sound' } : {}"
+      @click="$emit('open-sources')" />
 
     <IconButton icon="eye" :label="settings.showMenuLabels ? 'Designs' : undefined" @click="$emit('open-designs')" />
 
     <IconButton to="/design" icon="sliders" :label="settings.showMenuLabels ? 'Customize' : undefined" />
 
     <IconButton to="/settings" icon="settings" :label="settings.showMenuLabels ? 'Settings' : undefined" />
-
-    <!-- Web Share doesn't exist in Electron. -->
-    <IconButton v-if="!isDesktop" @click="share" icon="share" :label="settings.showMenuLabels ? 'Share' : undefined" />
 
     <IconButton
       v-if="viewport.fullscreenSupported"
@@ -27,16 +22,15 @@
 </template>
 
 <script setup lang="ts">
-import { IconButton, useViewport, useSources, useNativeShare, AudioSourceButton } from "@wearesage/vue";
+import { IconButton, useViewport, useSources, AudioSourceButton } from "@wearesage/vue";
 import { AudioSource } from "@wearesage/shared";
-import { isDesktop } from "../desktop";
+import { isDesktop, listenTo } from "../platform";
 import { settings } from "../settings";
 
 defineEmits(["open-sources", "open-designs"]);
 
 const viewport = useViewport();
 const sources = useSources();
-const share = useNativeShare();
 </script>
 
 <style lang="scss" scoped>

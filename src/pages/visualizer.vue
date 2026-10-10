@@ -9,7 +9,7 @@
     </Transition>
 
     <Transition name="fade">
-      <AudioSources v-if="showSources" @close="closeSources" @select-source="selectSource" @select-radio-paradise="selectRadioParadise" />
+      <AudioSources v-if="showSources" @close="closeSources" @listen="listen" />
     </Transition>
 
     <Transition name="fade-down">
@@ -21,15 +21,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
-import { useMagicKeys } from "@vueuse/core";
-import { View, useSources, useViewport, useUI, useSketches, useAudio, parseQueryString, TrackDisplay } from "@wearesage/vue";
+import { useMagicKeys, useWakeLock } from "@vueuse/core";
+import { View, useSources, useViewport, useUI, useSketches, useAudio, useToast, TrackDisplay } from "@wearesage/vue";
 import { Menu, AudioSources, NowPlaying } from "../components";
-import { useRouter } from "@wearesage/vue";
-import { AudioSource, RadioParadiseStation } from "@wearesage/shared";
-import { isDesktop } from "../desktop";
+import { AudioSource } from "@wearesage/shared";
+import { isDesktop, listenTo } from "../platform";
 import { settings } from "../settings";
 
-const router = useRouter();
+const toast = useToast();
+const wakeLock = useWakeLock();
 const viewport = useViewport();
 const sources = useSources();
 const audio = useAudio();
@@ -44,24 +44,29 @@ const showMenuTimeout = ref<any>(null);
 const forceHideTimeout = ref<any>(null);
 const MOUSE_TIMEOUT = 2000;
 
-onMounted(async () => {
-  const queryParams = parseQueryString();
-
-  if (queryParams.spotify === "connected") {
-    sources.selectSource(AudioSource.SPOTIFY);
-    router.cleanQuery("spotify");
-    closeSources();
-    applyForceHide();
-  }
+onMounted(() => {
+  wakeLock.request("screen"); // keep phones (and screensavers) from blanking the visuals
 
   if (isDesktop && !sources.source) {
     // Start on system audio at launch. kaleidosync holds audio until a click; Electron doesn't need one (desktop.js),
-    // so satisfy its gesture check and initialize audio before the source switch, which relies on it.
+    // so satisfy its gesture check.
     document.dispatchEvent(new Event("mousedown"));
-    await audio.initializeAudio();
-    selectSource(AudioSource.MICROPHONE);
+    listen("system");
   }
 });
+
+// Starts kaleidosync's "Microphone" source on what platform.ts should hear. Prime audio first: the source switch needs
+// it, and kaleidosync otherwise primes on a timer after the first click, racing that same click.
+async function listen(to: "system" | "microphone") {
+  listenTo.value = to;
+  showSources.value = false;
+  showMenu.value = false;
+  await audio.initializeAudio();
+  await sources.selectSource(AudioSource.MICROPHONE);
+  if (sources.source === AudioSource.MICROPHONE) return;
+  toast.error(to === "system" ? "No audio was shared. Pick a tab or Entire screen, and turn on its audio." : "Couldn't use the microphone.");
+  showSources.value = true;
+}
 
 watch(
   () => viewport.mouse,
@@ -130,22 +135,9 @@ function closeSources() {
   showMenu.value = true;
 }
 
-function selectSource(source: AudioSource) {
-  sources.selectSource(source);
-  showSources.value = false;
-  showMenu.value = false;
-}
-
 function openDesigns() {
   showMenu.value = false;
   ui.showShaderScroll = true;
-}
-
-function selectRadioParadise(data: { station: RadioParadiseStation }) {
-  sources.selectRadioParadiseStation(data.station);
-  sources.selectSource(AudioSource.RADIO_PARADISE);
-  showSources.value = false;
-  showMenu.value = false;
 }
 </script>
 

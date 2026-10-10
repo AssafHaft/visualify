@@ -16,7 +16,7 @@ import { Column, Row, pause, randomNumber, useViewport, useAnimation, Link, useD
 
 const device = useDevice();
 const viewport = useViewport();
-const typed = ref(["Spotify", "Audius", "Radio Paradise", "your voice"]);
+const typed = ref(["Spotify", "your music", "your playlist", "your voice"]);
 const activeIndex = ref(0);
 const visible = ref("");
 const blink = ref(false);
