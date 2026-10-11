@@ -161,6 +161,21 @@ document.body.addEventListener("wheel", e => {
     viewport.onScroll(e.deltaY);
   });
 });
+
+// Phones have no wheel: a vertical swipe scrolls the Designs browser instead, following the finger. 500 scroll units
+// are one world unit (useShaderLayout), and the 50° camera at z = 1 shows 2·tan(25°) ≈ 0.93 of them, so a swipe the
+// height of the screen is ~466 units.
+let touchY = 0;
+document.body.addEventListener("touchstart", e => (touchY = e.touches[0].clientY), { passive: true });
+document.body.addEventListener(
+  "touchmove",
+  e => {
+    const dy = touchY - e.touches[0].clientY;
+    touchY = e.touches[0].clientY;
+    if (ui.showShaderScroll) raf.preFrame.push(() => viewport.onScroll((dy * 466) / window.innerHeight));
+  },
+  { passive: true }
+);
 </script>
 
 <style lang="scss" scoped>
