@@ -59,6 +59,7 @@ import {
 } from "@wearesage/vue";
 import { settings, savedVariants } from "../settings";
 import { shuffleTimer } from "../shuffle";
+import { simpleDesigns } from "../simple-designs";
 
 const raf = useRAF();
 const sketches = useSketches();
@@ -152,7 +153,8 @@ useAnimation(now => {
   if (shuffling && shuffleDue(seconds, audioSystem.rawVolume)) shuffle(renderer.value.domElement);
 });
 
-// Variants saved with + on the design page (pages/design.vue).
+// The simple designs (simple-designs.ts) go first in the Designs browser; saved variants (pages/design.vue) apply to all.
+sketches.iterations.unshift(...simpleDesigns);
 for (const s of sketches.iterations) s.variants = savedVariants.value[s.shader] ?? s.variants;
 if (!sketches.sketch) sketches.sampleSketches();
 

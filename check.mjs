@@ -68,22 +68,36 @@ try {
 
   // Re-picking a design swaps in a new uniforms object, as + does when it saves. That used to leave three.js drawing a
   // stale copy (frozen visuals) until another design was picked.
-  const stale = await evaluate(`(async () => {
+  // The main renderer's three.js state, and the material drawing the current design.
+  const three = `
     const s = ${store("sketches")};
-    s.selectSketch(s.sketch);
-    await new Promise(r => setTimeout(r, 300));
     const find = vnode => {
       const c = vnode?.component;
       if (c?.exposed?.context && c.parent?.type?.__name === "Renderer") return c.exposed.context.value ?? c.exposed.context;
       for (const child of [c?.subTree, ...(Array.isArray(vnode?.children) ? vnode.children : [])]) if (child) { const r = find(child); if (r) return r; }
     };
     const { renderer, scene } = find(document.getElementById("app")._vnode);
-    let material;
-    scene.value.traverse(o => o.visible && o.material?.fragmentShader?.includes(s.shader.slice(-200)) && (material = o.material));
-    return renderer.value.properties.get(material).uniforms !== material.uniforms;
+    const material = () => { let m; scene.value.traverse(o => o.visible && o.material?.fragmentShader?.includes(s.shader.slice(-200)) && (m = o.material)); return m; };`;
+  const stale = await evaluate(`(async () => {${three}
+    s.selectSketch(s.sketch);
+    await new Promise(r => setTimeout(r, 300));
+    return renderer.value.properties.get(material()).uniforms !== material().uniforms;
   })()`);
   assert.equal(stale, false, "three.js is drawing stale uniforms after re-picking a design (frozen visuals)");
   console.log("ok: visuals keep updating after a design's uniforms are replaced");
+
+  // The simple designs (src/simple-designs.ts, first in the list) compile: a GLSL mistake would just draw black.
+  const compiled = await evaluate(`(async () => {${three}
+    const result = [];
+    for (const i of [0, 1]) {
+      s.selectSketchByIndex(i);
+      await new Promise(r => setTimeout(r, 500));
+      result.push(renderer.value.properties.get(material())?.currentProgram?.diagnostics?.runnable !== false);
+    }
+    return result;
+  })()`);
+  assert.deepEqual(compiled, [true, true], "a simple design's shader failed to compile");
+  console.log("ok: the sine wave and equalizer designs compile");
 } finally {
   app.kill();
 }
